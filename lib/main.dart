@@ -1,122 +1,142 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  runApp(const TemperatureConverterApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class TemperatureConverterApp extends StatelessWidget {
+  const TemperatureConverterApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Temperature Converter',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const ConverterScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class ConverterScreen extends StatefulWidget {
+  const ConverterScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<ConverterScreen> createState() => _ConverterScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+enum ConversionType { toCelsius, toFahrenheit }
 
-  void _incrementCounter() {
+class _ConverterScreenState extends State<ConverterScreen> {
+  ConversionType? _conversionType = ConversionType.toCelsius;
+  final TextEditingController _controller = TextEditingController();
+  String _result = '';
+  List<String> _history = [];
+
+  void _convert() {
+    final input = double.tryParse(_controller.text);
+    if (input == null) return;
+
+    double convertedValue;
+    String entry;
+
+    if (_conversionType == ConversionType.toCelsius) {
+      convertedValue = (input - 32) * 5 / 9;
+      entry = "F to C: $input ➔ ${convertedValue.toStringAsFixed(2)}";
+    } else {
+      convertedValue = input * 9 / 5 + 32;
+      entry = "C to F: $input ➔ ${convertedValue.toStringAsFixed(2)}";
+    }
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _result = convertedValue.toStringAsFixed(2);
+      _history.insert(0, entry); // Most recent on top
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final converterControls = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Conversion:"),
+        Row(
+          children: [
+            Expanded(
+              child: RadioListTile<ConversionType>(
+                title: const Text("Fahrenheit to Celsius"),
+                value: ConversionType.toCelsius,
+                groupValue: _conversionType,
+                onChanged: (value) {
+                  setState(() {
+                    _conversionType = value;
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: RadioListTile<ConversionType>(
+                title: const Text("Celsius to Fahrenheit"),
+                value: ConversionType.toFahrenheit,
+                groupValue: _conversionType,
+                onChanged: (value) {
+                  setState(() {
+                    _conversionType = value;
+                  });
+                },
+              ),
             ),
           ],
         ),
+        TextField(
+          controller: _controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(labelText: "Enter temperature"),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton(
+          onPressed: _convert,
+          child: const Text("CONVERT"),
+        ),
+        const SizedBox(height: 10),
+        Text("Converted Value: $_result", style: const TextStyle(fontSize: 18)),
+      ],
+    );
+
+    final historyList = Expanded(
+      child: ListView.builder(
+        itemCount: _history.length,
+        itemBuilder: (context, index) => ListTile(
+          title: Text(_history[index]),
+        ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+
+    return Scaffold(
+      appBar: AppBar(title: const Text("Converter")),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: isLandscape
+            ? Row(
+                children: [
+                  Expanded(child: converterControls),
+                  const SizedBox(width: 20),
+                  historyList,
+                ],
+              )
+            : Column(
+                children: [
+                  converterControls,
+                  const SizedBox(height: 20),
+                  const Text("History:"),
+                  historyList,
+                ],
+              ),
+      ),
     );
   }
 }
